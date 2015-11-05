@@ -1,0 +1,87 @@
+//
+//  BaseModal.m
+//  项目二day1
+//
+//  Created by mac on 15/10/10.
+//  Copyright (c) 2015年 huiwen. All rights reserved.
+//
+//使用宏定义忽略警告
+#define SuppressPerformSelectorLeakWarning(Stuff) \
+do { \
+_Pragma("clang diagnostic push") \
+_Pragma("clang diagnostic ignored \"-Warc-performSelector-leaks\"") \
+Stuff; \
+_Pragma("clang diagnostic pop") \
+} while (0)
+
+#import "BaseModal.h"
+
+@implementation BaseModal
+
+//获取set方法
+-(SEL)getSetterSelWithAttibuteName:(NSString*)attributeName{
+    //name  setName
+    //time  setTime
+    //createDate  //  CreateDate   setCreateDate
+    
+    NSString *capital = [[attributeName substringToIndex:1] uppercaseString];
+    NSString *setterSelStr = [NSString stringWithFormat:@"set%@%@:",capital,[attributeName substringFromIndex:1]];
+    
+    //
+    return NSSelectorFromString(setterSelStr);
+    
+}
+
+//初始化方法
+-(id)initWithDataDic:(NSDictionary*)dataDic{
+    
+    self = [super init];
+    if (self) {
+        [self setAttributes:dataDic];
+    }
+    return  self;
+}
+
+//设置属性映射
+//这里用于子类化,子类实现 {property名:字段名}  映射
+- (NSDictionary*)attributeMapDictionary{
+    return  nil;
+    
+}
+
+//设置属性
+- (void)setAttributes:(NSDictionary*)dataDic{
+    
+    NSDictionary *attrMapDic = [self attributeMapDictionary];
+    //如果没有映射字典，则直接用字段名 作为 属性名
+    if (attrMapDic == nil) {
+        NSMutableDictionary *dic = [NSMutableDictionary dictionaryWithCapacity:[dataDic count]];
+        for (NSString *key in dataDic) {
+            [dic setValue:key forKey:key];
+            attrMapDic = dic;
+        }
+    }
+    
+    // @"createDate":@"created_at", //
+    // @"weiboId":@"id",
+    
+    //@"name" @"time"
+    NSArray *attrbuteNameArray = [attrMapDic allKeys];
+    for (NSString *attributeName in attrbuteNameArray) {
+        //通过属性名获得set方法
+        SEL sel = [self getSetterSelWithAttibuteName:attributeName];
+        //setName setTime
+        if ([self respondsToSelector:sel]) {
+            //得到数据字典中的字段关键值
+            NSString *dataDicKey = [attrMapDic objectForKey:attributeName];
+            //得到数据字典中的值
+            id attributeValue = [dataDic objectForKey:dataDicKey];
+            //调用set方法 为属性赋值
+            [self performSelector:sel withObject:attributeValue];
+        }
+        
+    }
+    
+    
+}
+@end
